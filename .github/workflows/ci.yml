@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.12", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+      # The tracer extra (torch, PII-Tracer) is not needed: the tests cover presidio mode, the hybrid
+      # rules and the middleware without loading the model.
+      - run: pip install -e ".[langchain,dev]"
+      - run: python -m spacy download fr_core_news_md
+      - run: ruff check src tests
+      - run: pytest -q
